@@ -5,7 +5,6 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.widget.*;
-
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -13,38 +12,48 @@ public class MainActivity extends Activity {
 
     EditText etInput;
     TextView tvStatus;
-    TextView tvDetail;
+    LinearLayout listContainer;
+    TextView tvRaw;
+    TextView tvSummary;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(30, 30, 30, 30);
+        ScrollView scroll = new ScrollView(this);
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(20, 20, 20, 20);
 
         tvStatus = new TextView(this);
         tvStatus.setText("READY");
         tvStatus.setTextSize(28);
         tvStatus.setTextColor(Color.WHITE);
         tvStatus.setBackgroundColor(Color.GRAY);
-        tvStatus.setPadding(10, 10, 10, 10);
+        tvStatus.setPadding(20, 20, 20, 20);
 
         etInput = new EditText(this);
-        etInput.setHint("扫码或输入二维码");
-        etInput.setTextSize(18);
+        etInput.setHint("扫码输入");
 
-        tvDetail = new TextView(this);
-        tvDetail.setText("等待扫码...");
-        tvDetail.setTextSize(16);
+        tvRaw = new TextView(this);
+        tvRaw.setPadding(10, 10, 10, 10);
 
-        layout.addView(tvStatus);
-        layout.addView(etInput);
-        layout.addView(tvDetail);
+        listContainer = new LinearLayout(this);
+        listContainer.setOrientation(LinearLayout.VERTICAL);
 
-        setContentView(layout);
+        tvSummary = new TextView(this);
+        tvSummary.setTextSize(16);
+        tvSummary.setPadding(10, 20, 10, 10);
 
-        // 扫码枪回车触发
+        root.addView(tvStatus);
+        root.addView(etInput);
+        root.addView(tvRaw);
+        root.addView(listContainer);
+        root.addView(tvSummary);
+
+        scroll.addView(root);
+        setContentView(scroll);
+
         etInput.setOnKeyListener((v, keyCode, event) -> {
             if (keyCode == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN) {
                 process();
@@ -55,24 +64,30 @@ public class MainActivity extends Activity {
     }
 
     private void process() {
-        String input = etInput.getText().toString().trim();
+        listContainer.removeAllViews();
+        tvSummary.setText("");
 
+        String input = etInput.getText().toString().trim();
         if (input.isEmpty()) {
-            update(false, "❌ 空数据");
+            setStatus(false);
+            tvSummary.setText("❌ 空数据");
             return;
         }
 
         String extracted = extract(input);
-        String[] parts = extracted.split("#");
+        tvRaw.setText("原始数据:\n" + extracted);
 
+        String[] parts = extracted.split("#");
         if (parts.length != 3) {
-            update(false, "❌ 格式错误（必须3段）");
+            setStatus(false);
+            tvSummary.setText("❌ 格式错误（必须3段）");
             return;
         }
 
         String prefix = parts[0];
         if (prefix.length() < 10) {
-            update(false, "❌ 长度不足");
+            setStatus(false);
+            tvSummary.setText("❌ 长度不足");
             return;
         }
 
@@ -85,85 +100,83 @@ public class MainActivity extends Activity {
         List<String> errors = new ArrayList<>();
 
         // ID
-        if (!id.equals("0")) {
-            errors.add("ID必须为0");
-        }
+        addItem("Identification Number", id, "必须为0",
+                id.equals("0"), "必须为0", errors);
 
         // SKU
-        if (!sku.matches("\\d{9}")) {
-            errors.add("SKU必须9位数字");
-        }
+        boolean skuValid = sku.matches("\\d{9}");
+        addItem("SKU Number", sku, "9位数字",
+                skuValid, "必须9位数字", errors);
 
         // Batch
-        if (!batch.matches("[A-Za-z0-9]{1,15}")) {
-            errors.add("Batch不合法（≤15位字母数字）");
-        }
+        boolean batchValid = batch.matches("[A-Za-z0-9]{1,15}");
+        addItem("Batch Number", batch, "≤15位字母数字",
+                batchValid, "长度或字符不合法", errors);
 
-        // 日期处理
         Date today = new Date();
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-
         Date pd = parseDate(pdStr);
         Date dd = parseDate(ddStr);
 
-        if (pd == null) {
-            errors.add("生产日期格式错误");
-        } else if (pd.after(today)) {
-            errors.add("生产日期不能大于今天");
+        boolean pdValid = pd != null && !pd.after(today);
+        addItem("Production Date", pdStr, "≤今天",
+                pdValid, "格式错误或大于今天", errors);
+
+        boolean ddValid = dd != null && dd.after(today);
+        addItem("Due Date", ddStr, ">今天",
+                ddValid, "必须大于今天", errors);
+
+        if (pd != null && dd != null) {
+            boolean relation = pd.before(dd);
+            addItem("Date Relation", "",
+                    "Production < Due",
+                    relation, "生产日期必须小于到期日期", errors);
         }
 
-        if (dd == null) {
-            errors.add("到期日期格式错误");
-        } else if (!dd.after(today)) {
-            errors.add("到期日期必须大于今天");
-        }
-
-        if (pd != null && dd != null && !pd.before(dd)) {
-            errors.add("生产日期必须小于到期日期");
-        }
-
-        // 输出
         if (errors.isEmpty()) {
-            update(true, "✅ 校验通过");
+            setStatus(true);
+            tvSummary.setText("✅ 全部通过");
         } else {
-            StringBuilder sb = new StringBuilder();
+            setStatus(false);
+
+            StringBuilder sb = new StringBuilder("❌ 错误总览：\n");
             for (String e : errors) {
-                sb.append("❌ ").append(e).append("\n");
+                sb.append("• ").append(e).append("\n");
             }
-            update(false, sb.toString());
+            tvSummary.setText(sb.toString());
         }
 
         etInput.setText("");
     }
 
-    // ✅ Extract 逻辑（Excel G1）
-    private String extract(String input) {
+    private void addItem(String name, String value, String rule,
+                         boolean pass, String errorMsg, List<String> errors) {
 
-        if (input.contains("cii1/")) {
-            int start = input.indexOf("cii1/") + 5;
-            String raw = input.substring(start);
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(20, 20, 20, 20);
+        box.setBackgroundColor(Color.parseColor("#F5F5F5"));
 
-            if (raw.length() > 4) {
-                raw = raw.substring(0, raw.length() - 4);
-            }
+        TextView title = new TextView(this);
+        title.setText((pass ? "✅ " : "❌ ") + name + ": " + value);
 
-            return raw.replace("&", "#");
-        } else {
-            return input.replace("&", "#");
+        TextView ruleView = new TextView(this);
+        ruleView.setText("规则: " + rule);
+
+        box.addView(title);
+        box.addView(ruleView);
+
+        if (!pass) {
+            TextView err = new TextView(this);
+            err.setText("错误: " + errorMsg);
+            err.setTextColor(Color.RED);
+            box.addView(err);
+            errors.add(name);
         }
+
+        listContainer.addView(box);
     }
 
-    // ✅ 日期解析
-    private Date parseDate(String s) {
-        try {
-            return new SimpleDateFormat("yyyyMMdd").parse(s);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private void update(boolean pass, String msg) {
-
+    private void setStatus(boolean pass) {
         if (pass) {
             tvStatus.setText("✅ PASS");
             tvStatus.setBackgroundColor(Color.parseColor("#00C853"));
@@ -171,7 +184,25 @@ public class MainActivity extends Activity {
             tvStatus.setText("❌ FAIL");
             tvStatus.setBackgroundColor(Color.parseColor("#D50000"));
         }
+    }
 
-        tvDetail.setText(msg);
+    private String extract(String input) {
+        if (input.contains("cii1/")) {
+            int start = input.indexOf("cii1/") + 5;
+            String raw = input.substring(start);
+            if (raw.length() > 4) {
+                raw = raw.substring(0, raw.length() - 4);
+            }
+            return raw.replace("&", "#");
+        }
+        return input.replace("&", "#");
+    }
+
+    private Date parseDate(String s) {
+        try {
+            return new SimpleDateFormat("yyyyMMdd").parse(s);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
