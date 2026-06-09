@@ -1,8 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <uses-permission android:name="android.permission.CAMERA"/>
+
     <application
         android:label="QR Check Tool"
         android:theme="@android:style/Theme.Light.NoTitleBar">
+
+        <activity android:name="com.journeyapps.barcodescanner.CaptureActivity"
+            android:screenOrientation="portrait"/>
 
         <activity
             android:name=".MainActivity"
