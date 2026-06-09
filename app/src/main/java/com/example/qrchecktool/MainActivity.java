@@ -1,7 +1,6 @@
 package com.example.qrchecktool;
 
 import android.app.Activity;
-import android.content.Intent;
 import android.graphics.Color;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
@@ -17,7 +16,7 @@ public class MainActivity extends Activity {
     EditText etInput;
     TextView tvStatus;
     TextView tvExtracted;
-    LinearLayout tableContainer;
+    LinearLayout container;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,31 +28,29 @@ public class MainActivity extends Activity {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(20,20,20,20);
 
-        // ✅ 状态条
+        // 状态栏
         tvStatus = new TextView(this);
         tvStatus.setText("READY");
         tvStatus.setTextSize(26);
         tvStatus.setTextColor(Color.WHITE);
-        tvStatus.setBackgroundColor(Color.DKGRAY);
+        tvStatus.setBackgroundColor(Color.GRAY);
         tvStatus.setPadding(20,20,20,20);
 
-        // ✅ 输入（不清空）
+        // 输入（不清空）
         etInput = new EditText(this);
-        etInput.setHint("扫码枪输入");
+        etInput.setHint("扫码输入");
 
-        // ✅ 提取后内容
+        // 提取后内容
         tvExtracted = new TextView(this);
-        tvExtracted.setTextSize(16);
         tvExtracted.setPadding(10,10,10,10);
 
-        // ✅ 表格区域
-        tableContainer = new LinearLayout(this);
-        tableContainer.setOrientation(LinearLayout.VERTICAL);
+        container = new LinearLayout(this);
+        container.setOrientation(LinearLayout.VERTICAL);
 
         root.addView(tvStatus);
         root.addView(etInput);
         root.addView(tvExtracted);
-        root.addView(tableContainer);
+        root.addView(container);
 
         scroll.addView(root);
         setContentView(scroll);
@@ -61,7 +58,6 @@ public class MainActivity extends Activity {
         etInput.setOnKeyListener((v, keyCode, event) -> {
             if (keyCode == KeyEvent.KEYCODE_ENTER &&
                     event.getAction() == KeyEvent.ACTION_DOWN) {
-
                 process(etInput.getText().toString());
                 return true;
             }
@@ -71,7 +67,7 @@ public class MainActivity extends Activity {
 
     private void process(String input){
 
-        tableContainer.removeAllViews();
+        container.removeAllViews();
 
         if(input == null || input.isEmpty()){
             setStatus(false);
@@ -93,19 +89,18 @@ public class MainActivity extends Activity {
         String sku = prefix.substring(1,10);
         String batch = prefix.substring(10);
 
-        String sep1 = "#";
-        String sep2 = "#";
-
         String pdStr = parts[1];
         String ddStr = parts[2];
-
-        Date today = new Date();
-        Date pd = parseDate(pdStr);
-        Date dd = parseDate(ddStr);
 
         boolean idOK = id.equals("0");
         boolean skuOK = sku.matches("\\d{9}");
         boolean batchOK = batch.matches("[A-Za-z0-9]{1,15}");
+
+        Date today = new Date();
+
+        Date pd = strictDate(pdStr);
+        Date dd = strictDate(ddStr);
+
         boolean pdOK = pd != null && !pd.after(today);
         boolean ddOK = dd != null && dd.after(today);
         boolean relationOK = pd != null && dd != null && pd.before(dd);
@@ -114,90 +109,80 @@ public class MainActivity extends Activity {
 
         setStatus(allOK);
 
-        // ✅ 表格头
-        addHeader();
+        addCard("Identification Number", id, "1", "必须为0",
+                idOK, idOK ? "" : "必须为0");
 
-        // ✅ 每一行（完全对齐你Excel）
-        addRow("Identification Number", id, "默认数字0", idOK);
-        addRow("SKU Number", sku, "9位数字", skuOK);
-        addRow("Batch Number", batch, "≤15位字母或数字", batchOK);
+        addCard("SKU Number", sku, String.valueOf(sku.length()), "9位数字",
+                skuOK, skuOK ? "" : "必须为9位数字");
 
-        addRow("Separator", sep1, "#分隔符", true);
+        addCard("Batch Number", batch, String.valueOf(batch.length()), "≤15位字母数字",
+                batchOK, batchOK ? "" : "长度或字符非法");
 
-        addRow("Production Date", pdStr,
-                "8位数字 YYYYMMDD 且 ≤ Today",
-                pdOK);
+        addCard("Production Date", pdStr,
+                String.valueOf(pdStr.length()),
+                "8位日期YYYYMMDD 且 ≤ Today",
+                pdOK,
+                pd == null ? "非法日期格式" :
+                        pd.after(today) ? "大于今天" : "");
 
-        addRow("Separator", sep2, "#分隔符", true);
+        addCard("Due Date", ddStr,
+                String.valueOf(ddStr.length()),
+                "8位日期YYYYMMDD 且 > Today",
+                ddOK,
+                dd == null ? "非法日期格式" :
+                        !dd.after(today) ? "必须大于今天" : "");
 
-        addRow("Due Date", ddStr,
-                "8位数字 YYYYMMDD 且 > Today",
-                ddOK);
-
-        addRow("Date Rule", "",
-                "Production Date < Due Date",
-                relationOK);
+        addCard("Date Relation", "",
+                "-",
+                "Production < Due",
+                relationOK,
+                relationOK ? "" : "生产日期需小于到期日期");
     }
 
-    // ✅ 表头
-    private void addHeader(){
-        addRow("检查字段", "二维码字段内容", "校验规则", true, true);
-    }
+    // ✅ 每个字段卡片
+    private void addCard(String title, String value, String length,
+                         String rule, boolean pass, String error){
 
-    // ✅ 表格行（带颜色）
-    private void addRow(String col1, String col2, String col3, boolean pass){
-        addRow(col1, col2, col3, pass, false);
-    }
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(20,20,20,20);
+        card.setBackgroundColor(Color.parseColor("#F5F5F5"));
 
-    private void addRow(String col1, String col2, String col3,
-                        boolean pass, boolean isHeader){
+        TextView t1 = new TextView(this);
+        t1.setText("\n[" + title + "]");
+        t1.setTextSize(16);
 
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
+        TextView t2 = new TextView(this);
+        t2.setText("二维码内容：" + value);
 
-        row.addView(cell(col1, isHeader));
-        row.addView(cell(col2, false));
-        row.addView(cell(col3, false));
-        row.addView(resultCell(pass, isHeader));
+        TextView t3 = new TextView(this);
+        t3.setText("长度：" + length);
 
-        tableContainer.addView(row);
-    }
+        TextView t4 = new TextView(this);
+        t4.setText("校验规则：" + rule);
 
-    private TextView cell(String text, boolean header){
-        TextView tv = new TextView(this);
-        tv.setText(text);
-        tv.setPadding(10,10,10,10);
-        tv.setWidth(250);
+        TextView t5 = new TextView(this);
+        t5.setText("校验结果：" + (pass ? "TRUE" : "FALSE"));
+        t5.setTextColor(pass ? Color.parseColor("#00C853") : Color.RED);
 
-        if(header){
-            tv.setBackgroundColor(Color.LTGRAY);
+        card.addView(t1);
+        card.addView(t2);
+        card.addView(t3);
+        card.addView(t4);
+        card.addView(t5);
+
+        if(!pass){
+            TextView t6 = new TextView(this);
+            t6.setText("错误信息：" + error);
+            t6.setTextColor(Color.RED);
+            card.addView(t6);
         }
 
-        return tv;
-    }
-
-    private TextView resultCell(boolean pass, boolean header){
-        TextView tv = new TextView(this);
-        tv.setPadding(10,10,10,10);
-        tv.setWidth(200);
-
-        if(header){
-            tv.setText("校验结果");
-            tv.setBackgroundColor(Color.LTGRAY);
-        }else{
-            tv.setText(pass ? "TRUE" : "FALSE");
-            tv.setBackgroundColor(pass ?
-                    Color.parseColor("#00C853") :
-                    Color.parseColor("#D50000"));
-            tv.setTextColor(Color.WHITE);
-        }
-
-        return tv;
+        container.addView(card);
     }
 
     private void setStatus(boolean pass){
-
-        ToneGenerator tone = new ToneGenerator(AudioManager.STREAM_MUSIC, 100);
+        ToneGenerator tone = new ToneGenerator(AudioManager.STREAM_MUSIC,100);
 
         if(pass){
             tvStatus.setText("✅ PASS");
@@ -218,9 +203,13 @@ public class MainActivity extends Activity {
         return input.replace("&","#").trim();
     }
 
-    private Date parseDate(String s){
+    // ✅ 严格日期校验（关键）
+    private Date strictDate(String s){
+        if(!s.matches("\\d{8}")) return null;
         try{
-            return new SimpleDateFormat("yyyyMMdd").parse(s);
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+            sdf.setLenient(false);
+            return sdf.parse(s);
         }catch(Exception e){
             return null;
         }
