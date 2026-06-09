@@ -1,11 +1,4 @@
-package com.example.qrchecktool;
-
-import android.app.Activity;
-import android.graphics.Color;
-import android.media.AudioManager;
-import android.media.ToneGenerator;
-import android.os.Bundle;
-import android.view.KeyEvent;
+package com.example.qrchecktool;package com.example.qimport android.view.KeyEvent;
 import android.widget.*;
 
 import java.text.SimpleDateFormat;
@@ -23,16 +16,37 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         ScrollView scroll = new ScrollView(this);
+
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(20,20,20,20);
 
+        // ✅ 顶部栏（状态 + 关闭按钮）
+        LinearLayout topBar = new LinearLayout(this);
+        topBar.setOrientation(LinearLayout.HORIZONTAL);
+
         tvStatus = new TextView(this);
         tvStatus.setText("READY");
-        tvStatus.setTextSize(24);
+        tvStatus.setTextSize(20);
         tvStatus.setTextColor(Color.WHITE);
         tvStatus.setBackgroundColor(Color.GRAY);
         tvStatus.setPadding(20,20,20,20);
+
+        LinearLayout.LayoutParams statusParams =
+                new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT,1);
+
+        tvStatus.setLayoutParams(statusParams);
+
+        TextView btnClose = new TextView(this);
+        btnClose.setText("❌");
+        btnClose.setTextSize(20);
+        btnClose.setPadding(20,20,20,20);
+        btnClose.setGravity(Gravity.CENTER);
+
+        btnClose.setOnClickListener(v -> showExitDialog());
+
+        topBar.addView(tvStatus);
+        topBar.addView(btnClose);
 
         etInput = new EditText(this);
         etInput.setHint("扫码输入");
@@ -40,7 +54,7 @@ public class MainActivity extends Activity {
         tvExtracted = new TextView(this);
         tvResult = new TextView(this);
 
-        root.addView(tvStatus);
+        root.addView(topBar);
         root.addView(etInput);
         root.addView(tvExtracted);
         root.addView(tvResult);
@@ -56,6 +70,16 @@ public class MainActivity extends Activity {
             }
             return false;
         });
+    }
+
+    // ✅ 退出确认弹窗
+    private void showExitDialog(){
+        new AlertDialog.Builder(this)
+                .setTitle("确认退出")
+                .setMessage("是否退出程序？")
+                .setPositiveButton("确认", (dialog, which) -> finish())
+                .setNegativeButton("取消", null)
+                .show();
     }
 
     private void process(String input){
@@ -98,39 +122,41 @@ public class MainActivity extends Activity {
 
         setStatus(allOK);
 
+        String line = "----------------------------------------\n";
+
         StringBuilder sb = new StringBuilder();
 
         sb.append(buildBlock("Identification Number", id,
                 "1", "必须为0", idOK,
                 idOK ? "" : "必须为0"));
 
-        sb.append("------------------------------------\n");
+        sb.append(line);
         sb.append(buildBlock("SKU Number", sku,
                 String.valueOf(sku.length()),
                 "9位数字", skuOK,
                 skuOK ? "" : "必须9位数字"));
 
-        sb.append("------------------------------------\n");
+        sb.append(line);
         sb.append(buildBlock("Batch Number", batch,
                 String.valueOf(batch.length()),
                 "≤15位字母数字", batchOK,
                 batchOK ? "" : "非法"));
 
-        sb.append("------------------------------------\n");
+        sb.append(line);
         sb.append(buildBlock("Production Date", pdStr,
                 String.valueOf(pdStr.length()),
                 "YYYYMMDD 且 ≤ Today", pdOK,
                 pd == null ? "非法日期" :
-                pd.after(today) ? "大于今天" : ""));
+                        pd.after(today) ? "大于今天" : ""));
 
-        sb.append("------------------------------------\n");
+        sb.append(line);
         sb.append(buildBlock("Due Date", ddStr,
                 String.valueOf(ddStr.length()),
                 "YYYYMMDD 且 > Today", ddOK,
                 dd == null ? "非法日期" :
-                !dd.after(today) ? "必须大于今天" : ""));
+                        !dd.after(today) ? "必须大于今天" : ""));
 
-        sb.append("------------------------------------\n");
+        sb.append(line);
         sb.append(buildBlock("Date Relation","",
                 "-","Production < Due",
                 relationOK,
@@ -159,7 +185,7 @@ public class MainActivity extends Activity {
     }
 
     private void setStatus(boolean pass){
-        ToneGenerator tone = new ToneGenerator(AudioManager.STREAM_MUSIC, 100);
+        ToneGenerator tone = new ToneGenerator(AudioManager.STREAM_MUSIC,100);
 
         if(pass){
             tvStatus.setText("✅ PASS");
@@ -180,10 +206,8 @@ public class MainActivity extends Activity {
         return input.replace("&","#").trim();
     }
 
-    // ✅ 严格日期校验
     private Date strictDate(String s){
         if(!s.matches("\\d{8}")) return null;
-
         try{
             SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
             sdf.setLenient(false);
@@ -193,3 +217,13 @@ public class MainActivity extends Activity {
         }
     }
 }
+
+
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.graphics.Color;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
+import android.os.Bundle;
+import android.view.Gravity;
