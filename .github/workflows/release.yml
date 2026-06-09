@@ -21,15 +21,15 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
 
-    - name: Install Gradle 8.2
+    # ✅ 强制使用正确 Gradle 8.2
+    - name: Use Gradle 8.2
       run: |
         wget https://services.gradle.org/distributions/gradle-8.2-bin.zip
-        unzip gradle-8.2-bin.zip
+        unzip -q gradle-8.2-bin.zip
 
     - name: Build APK
       run: |
-        export PATH=$PATH:$(pwd)/gradle-8.2/bin
-        gradle assembleDebug
+        ./gradle-8.2/bin/gradle assembleDebug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
