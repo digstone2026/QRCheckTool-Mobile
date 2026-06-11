@@ -268,7 +268,14 @@ public class MainActivity extends Activity {
 
     private void addBlock(String name,String value,String len,String rule,boolean pass,String err){
         TextView tv=new TextView(this);
-        tv.setText("["+name+"]\nVal:"+value+"\nLen:"+len+"\nRule:"+rule+"\n"+(pass?"PASS":"FAIL")+"\n"+err);
+        tv.setText(
+        "[" + name + "]\n" +
+        "二维码内容：" + value + "\n" +
+        "长度：" + len + "\n" +
+        "校验规则：" + rule + "\n" +
+        "结果：" + (pass ? "PASS" : "FAIL") +
+        (err == null || err.isEmpty() ? "" : "\n错误：" + err)
+                    );
         tv.setPadding(20,20,20,20);
         tv.setBackgroundColor(pass?Color.parseColor("#C8E6C9"):Color.parseColor("#FFCDD2"));
         container.addView(tv);
