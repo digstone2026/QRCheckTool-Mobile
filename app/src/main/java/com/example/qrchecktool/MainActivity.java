@@ -239,10 +239,10 @@ public class MainActivity extends Activity {
         addBlock("Batch",batch,String.valueOf(batch.length()),"<=15",batchOK,"");
         addDivider();
 
-        addBlock("PD",pdStr,String.valueOf(pdStr.length()),"<= Today",pdOK,pdErr);
+        addBlock("ProductionDate",pdStr,String.valueOf(pdStr.length()),"<= Today",pdOK,pdErr);
         addDivider();
 
-        addBlock("DD",ddStr,String.valueOf(ddStr.length()),"> Today AND PD<DD",ddOK,ddErr.toString());
+        addBlock("DueDate",ddStr,String.valueOf(ddStr.length()),"> Today AND PD<DD",ddOK,ddErr.toString());
 
     }
 
