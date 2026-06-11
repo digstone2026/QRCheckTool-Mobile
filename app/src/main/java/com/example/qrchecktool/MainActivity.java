@@ -165,7 +165,7 @@ public class MainActivity extends Activity {
         }
 
         String extracted = extract(input);
-        tvExtracted.setText("Extracted:\n" + extracted);
+        tvExtracted.setText("识别的效期内容:\n" + extracted);
 
         String[] parts = extracted.split("#");
 
