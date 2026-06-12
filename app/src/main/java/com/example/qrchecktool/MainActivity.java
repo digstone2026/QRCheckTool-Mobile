@@ -283,6 +283,7 @@ public class MainActivity extends Activity {
 
     private void addDivider(){
         TextView tv=new TextView(this);
+        tv.setIncludeFontPadding(false);
         tv.setText("----------------------------------------");
         tv.setGravity(Gravity.CENTER);
         container.addView(tv);
