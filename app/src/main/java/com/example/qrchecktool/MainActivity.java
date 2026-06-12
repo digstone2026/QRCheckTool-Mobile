@@ -133,6 +133,21 @@ public class MainActivity extends Activity {
 
         root.addView(topBar);
         root.addView(etInput);
+        
+ImageView imgExample = new ImageView(this);
+imgExample.setImageResource(R.drawable.example);
+
+// ✅ 控制大小
+imgExample.setAdjustViewBounds(true);
+
+// ✅ 可选：缩放方式（保持比例）
+imgExample.setScaleType(ImageView.ScaleType.FIT_CENTER);
+
+// ✅ 间距（避免挤）
+imgExample.setPadding(10,10,10,10);
+
+root.addView(imgExample);
+
         root.addView(tvExtracted);
         root.addView(container);
 
