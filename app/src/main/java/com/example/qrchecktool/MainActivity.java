@@ -230,19 +230,19 @@ public class MainActivity extends Activity {
 
         setStatus(allOK);
 
-        addBlock("ID",id,"1","Must 0",idOK,"");
+        addBlock("ID(第1位,默认数字0)",id,"1","Must 0",idOK,"");
         addDivider();
 
-        addBlock("SKU",sku,String.valueOf(sku.length()),"9 digits",skuOK,"");
+        addBlock("SKU(9位数字，位数不够前面补0)",sku,String.valueOf(sku.length()),"9 digits",skuOK,"");
         addDivider();
 
-        addBlock("Batch",batch,String.valueOf(batch.length()),"<=15",batchOK,"");
+        addBlock("Batch(不超过15位; 只允许数字或字母)",batch,String.valueOf(batch.length()),"<=15",batchOK,"");
         addDivider();
 
-        addBlock("ProductionDate",pdStr,String.valueOf(pdStr.length()),"<= Today",pdOK,pdErr);
+        addBlock("ProductionDate(8位数字，日期格式 YYYYMMDD)",pdStr,String.valueOf(pdStr.length()),"<= Today",pdOK,pdErr);
         addDivider();
 
-        addBlock("DueDate",ddStr,String.valueOf(ddStr.length()),"> Today AND PD<DD",ddOK,ddErr.toString());
+        addBlock("DueDate(8位数字，日期格式 YYYYMMDD)",ddStr,String.valueOf(ddStr.length()),"> Today AND PD<DD",ddOK,ddErr.toString());
 
     }
 
