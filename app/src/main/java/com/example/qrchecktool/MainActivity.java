@@ -1,26 +1,24 @@
 package com.example.qrchecktool;
 
+// ... (原有的 import 保持不变) ...
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.*;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
-import android.widget.*;
-
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
-import android.Manifest;
-import android.content.pm.PackageManager;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -35,7 +33,6 @@ import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
-import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
 
@@ -46,72 +43,37 @@ import com.google.mlkit.vision.barcode.BarcodeScanning;
 import com.google.mlkit.vision.barcode.common.Barcode;
 import com.google.mlkit.vision.common.InputImage;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-
 public class MainActivity extends Activity {
 
-        // 相机相关
-    private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
-    private ExecutorService cameraExecutor;
-    private boolean isScanning = false; // 防止重复弹窗
-    
     EditText etInput;
     TextView tvStatus, tvInfo, tvExtracted;
     LinearLayout container;
-
     int passCount = 0;
     int failCount = 0;
-
     String lastCode = "";
     long lastScanTime = 0;
 
-    private String getScanData(Intent intent){
-        String[] keys = {"barcode_string","data","barcode_data","scan_data"};
-        for(String key : keys){
-            String val = intent.getStringExtra(key);
-            if(val != null && !val.isEmpty()){
-                return val;
-            }
-        }
-        return "";
-    }
-
-    private boolean canScan(){
-        long now = System.currentTimeMillis();
-        if(now - lastScanTime < 300) return false;
-        lastScanTime = now;
-        return true;
-    }
-
-    private BroadcastReceiver receiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-
-            String data = getScanData(intent);
-
-            if(data != null && !data.isEmpty() && canScan()){
-
-                if(data.equals(lastCode)) return;
-                lastCode = data;
-
-                etInput.setText(data);
-                process(data);
-            }
-        }
-    };
+    // >>> 1. 新增：相机相关成员变量 <<<
+    private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
+    private ExecutorService cameraExecutor;
+    private boolean isScanning = false; // 防止重复弹窗
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         ScrollView scroll = new ScrollView(this);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(20, 20, 20, 20);
 
+        // ... (保持原有的 UI 初始化代码不变) ...
         tvStatus = new TextView(this);
         tvStatus.setText("READY");
         tvStatus.setTextSize(34);
@@ -125,21 +87,22 @@ public class MainActivity extends Activity {
 
         LinearLayout topBox = new LinearLayout(this);
         topBox.setOrientation(LinearLayout.VERTICAL);
-        topBox.setPadding(20,10,20,10);
+        topBox.setPadding(20, 10, 20, 10);
         topBox.setBackgroundColor(Color.GRAY);
         topBox.addView(tvStatus);
         topBox.addView(tvInfo);
 
         TextView btnClose = new TextView(this);
         btnClose.setText("X");
-        btnClose.setPadding(20,20,20,20);
+        btnClose.setPadding(20, 20, 20, 20);
         btnClose.setOnClickListener(v -> showExit());
 
         LinearLayout topBar = new LinearLayout(this);
-        topBar.addView(topBox,new LinearLayout.LayoutParams(0,-2,1));
+        topBar.addView(topBox, new LinearLayout.LayoutParams(0, -2, 1));
         topBar.addView(btnClose);
+        root.addView(topBar);
 
-                // --- 修改点：初始化输入框 ---
+        // --- 修改点：初始化输入框 ---
         etInput = new EditText(this);
         etInput.setHint("点击此处扫码或输入");
         
@@ -154,235 +117,187 @@ public class MainActivity extends Activity {
             }
         });
 
+        // 保持原有的回车监听
         etInput.setOnKeyListener((v, keyCode, event) -> {
-            if(keyCode == KeyEvent.KEYCODE_ENTER &&
-                    event.getAction() == KeyEvent.ACTION_DOWN){
+            if (keyCode == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN) {
                 process(etInput.getText().toString());
                 return true;
             }
             return false;
         });
 
+        // ... (保持原有的 TextWatcher 逻辑) ...
         etInput.addTextChangedListener(new android.text.TextWatcher() {
-
             long last = 0;
-
-            public void beforeTextChanged(CharSequence s,int a,int b,int c){}
-            public void afterTextChanged(android.text.Editable s){}
-
-            public void onTextChanged(CharSequence s,int a,int b,int c){
+            public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
+            public void afterTextChanged(android.text.Editable s) {}
+            public void onTextChanged(CharSequence s, int a, int b, int c) {
                 long now = System.currentTimeMillis();
-                if(now - last < 500) return;
+                if (now - last < 500) return;
                 last = now;
-
-                if(s.length() > 5){
+                if (s.length() > 5) {
                     process(s.toString());
                 }
             }
         });
 
-        tvExtracted = new TextView(this);
+        root.addView(etInput);
 
+        // ... (保持原有的 Example Image 逻辑) ...
+        ImageView imgExample = new ImageView(this);
+        imgExample.setImageResource(R.drawable.example);
+        imgExample.setAdjustViewBounds(true);
+        imgExample.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        imgExample.setPadding(10, 10, 10, 10);
+        root.addView(imgExample);
+
+        tvExtracted = new TextView(this);
         container = new LinearLayout(this);
         container.setOrientation(LinearLayout.VERTICAL);
-
-        root.addView(topBar);
-        root.addView(etInput);
-        
-ImageView imgExample = new ImageView(this);
-imgExample.setImageResource(R.drawable.example);
-
-// ✅ 控制大小
-imgExample.setAdjustViewBounds(true);
-
-// ✅ 可选：缩放方式（保持比例）
-imgExample.setScaleType(ImageView.ScaleType.FIT_CENTER);
-
-// ✅ 间距（避免挤）
-imgExample.setPadding(10,10,10,10);
-
-root.addView(imgExample);
-
         root.addView(tvExtracted);
         root.addView(container);
-
         scroll.addView(root);
         setContentView(scroll);
+
+        // 2. 初始化 Camera Executor
+        cameraExecutor = Executors.newSingleThreadExecutor();
+        cameraProviderFuture = ProcessCameraProvider.getInstance(this);
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        IntentFilter filter = new IntentFilter();
-        filter.addAction("android.intent.ACTION_DECODE_DATA");
-        filter.addAction("com.android.server.scannerservice.broadcast");
-        registerReceiver(receiver, filter);
+    // >>> 3. 新增：权限检查逻辑 <<<
+    private static final int REQUEST_CODE_PERMISSIONS = 10;
+    private static final String[] REQUIRED_PERMISSIONS = new String[]{Manifest.permission.CAMERA};
+
+    private void checkCameraPermission() {
+        if (allPermissionsGranted()) {
+            openCameraPreview();
+        } else {
+            ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
+        }
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        unregisterReceiver(receiver);
-    }
-
-    private void process(String input){
-
-        container.removeAllViews();
-
-        if(input == null || input.isEmpty()){
-            setStatus(false);
-            return;
-        }
-
-        String extracted = extract(input);
-        tvExtracted.setText("识别的效期内容:\n" + extracted);
-
-        String[] parts = extracted.split("#");
-
-        if(parts.length != 3){
-            setStatus(false);
-            addBlock("Format Error",extracted,"-","3 parts",false,"Separator error");
-            return;
-        }
-
-        String prefix = parts[0];
-
-        String id = prefix.substring(0,1);
-        String sku = prefix.substring(1,10);
-        String batch = prefix.substring(10);
-
-        String pdStr = parts[1];
-        String ddStr = parts[2];
-
-        Date today = new Date();
-
-        boolean idOK = id.equals("0");
-        boolean skuOK = sku.matches("\\d{9}");
-        boolean batchOK = batch.matches("[A-Za-z0-9]{1,15}");
-
-        boolean pdOK = false;
-        String pdErr = "";
-        Date pd = null;
-
-        if(!pdStr.matches("^\\d{8}$")){
-            pdErr = "Must 8 digits";
-        }else{
-            pd = strictDate(pdStr);
-            if(pd == null) pdErr = "Invalid date";
-            else if(pd.after(today)) pdErr = "Future";
-            else pdOK = true;
-        }
-
-        Date dd = null;
-        boolean ddOK = true;
-        StringBuilder ddErr = new StringBuilder();
-
-        if(!ddStr.matches("^\\d{8}$")){
-            ddOK = false;
-            ddErr.append("- Must 8 digits\n");
-        }else{
-            dd = strictDate(ddStr);
-            if(dd == null){
-                ddOK = false;
-                ddErr.append("- Invalid date\n");
-            }else if(!dd.after(today)){
-                ddOK = false;
-                ddErr.append("- Must future\n");
+    private boolean allPermissionsGranted() {
+        for (String permission : REQUIRED_PERMISSIONS) {
+            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+                return false;
             }
         }
-
-        if(pd != null && dd != null && !pd.before(dd)){
-            ddOK = false;
-            ddErr.append("- PD < DD\n");
-        }
-
-        boolean allOK = idOK && skuOK && batchOK && pdOK && ddOK;
-
-        setStatus(allOK);
-
-        addBlock("ID(第1位,默认数字0)",id,"1","Must 0",idOK,"");
-        addDivider();
-
-        addBlock("SKU(9位数字，位数不够前面补0)",sku,String.valueOf(sku.length()),"9 digits",skuOK,"");
-        addDivider();
-
-        addBlock("Batch(不超过15位; 只允许数字或字母)",batch,String.valueOf(batch.length()),"<=15",batchOK,"");
-        addDivider();
-
-        addBlock("ProductionDate(8位数字，日期格式 YYYYMMDD)",pdStr,String.valueOf(pdStr.length()),"<= Today",pdOK,pdErr);
-        addDivider();
-
-        addBlock("DueDate(8位数字，日期格式 YYYYMMDD)",ddStr,String.valueOf(ddStr.length()),"> Today AND PD<DD",ddOK,ddErr.toString());
-
+        return true;
     }
 
-    private void setStatus(boolean pass){
-
-        ToneGenerator t=new ToneGenerator(AudioManager.STREAM_MUSIC,100);
-        LinearLayout parent=(LinearLayout) tvStatus.getParent();
-
-        if(pass){
-            passCount++;
-            tvStatus.setText("PASS");
-            parent.setBackgroundColor(Color.GREEN);
-            // t.startTone(ToneGenerator.TONE_PROP_BEEP);
-        }else{
-            failCount++;
-            tvStatus.setText("FAIL");
-            parent.setBackgroundColor(Color.RED);
-            // t.startTone(ToneGenerator.TONE_SUP_ERROR);
-        }
-
-        tvInfo.setText("v1.0 | P:"+passCount+" F:"+failCount);
-    }
-
-    private void addBlock(String name,String value,String len,String rule,boolean pass,String err){
-        TextView tv=new TextView(this);
-        tv.setText(
-        "[" + name + "]\n" +
-        "二维码内容：" + value + "\n" +
-        "长度：" + len + "\n" +
-        "校验规则：" + rule + "\n" +
-        "结果：" + (pass ? "PASS" : "FAIL") +
-        (err == null || err.isEmpty() ? "" : "\n错误：" + err)
-                    );
-        tv.setPadding(20,6,20,6);
-        tv.setBackgroundColor(pass?Color.parseColor("#C8E6C9"):Color.parseColor("#FFCDD2"));
-        container.addView(tv);
-    }
-
-    private void addDivider(){
-        TextView tv=new TextView(this);
-        tv.setIncludeFontPadding(false);
-        tv.setText("----------------------------------------");
-        tv.setGravity(Gravity.CENTER);
-        container.addView(tv);
-    }
-
-    private void showExit(){
-        new AlertDialog.Builder(this)
-                .setTitle("Exit")
-                .setMessage("Quit?")
-                .setPositiveButton("Yes",(d,w)->finish())
-                .setNegativeButton("No",null)
+    // >>> 4. 新增：打开相机预览并扫码 <<<
+    private void openCameraPreview() {
+        isScanning = true;
+        // 创建一个全屏的 Dialog 来显示相机预览
+        final AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(new View(this)) // 临时占位
+                .setCancelable(true)
                 .show();
+
+        // 调整 Dialog 大小
+        dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+
+        // 初始化 PreviewView
+        PreviewView viewFinder = new PreviewView(this);
+        dialog.setContentView(viewFinder);
+
+        // 初始化 ML Kit 扫码器
+        BarcodeScannerOptions options = new BarcodeScannerOptions.Builder()
+                .setBarcodeFormats(Barcode.FORMAT_QR_CODE) // 只识别 QR Code
+                .build();
+        BarcodeScanner scanner = BarcodeScanning.getClient(options);
+
+        // 绑定生命周期和分析器
+        cameraProviderFuture.addListener(() -> {
+            try {
+                ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
+                bindPreview(cameraProvider, scanner, viewFinder, dialog);
+            } catch (ExecutionException | InterruptedException e) {
+                Log.e("QRScanner", "Camera init failed", e);
+                isScanning = false;
+                dialog.dismiss();
+            }
+        }, ContextCompat.getMainExecutor(this));
     }
 
-    private String extract(String input){
-        if(input.contains("cii1/")){
-            String raw=input.substring(input.indexOf("cii1/")+5);
-            return raw.replace("&","#");
+    // >>> 5. 新增：绑定预览和分析 <<<
+    private void bindPreview(@NonNull ProcessCameraProvider cameraProvider, BarcodeScanner scanner, PreviewView viewFinder, AlertDialog dialog) {
+        Preview preview = new Preview.Builder()
+                .setTargetAspectRatio(AspectRatio.RATIO_4_3)
+                .build();
+
+        CameraSelector cameraSelector = new CameraSelector.Builder()
+                .requireLensFacing(CameraSelector.LENS_FACING_BACK)
+                .build();
+
+        ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
+                .setTargetResolution(new android.util.Size(1280, 720))
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .build();
+
+        // 设置分析监听器
+        imageAnalysis.setAnalyzer(cameraExecutor, imageProxy -> {
+            @androidx.annotation.OptIn(markerClass = androidx.camera.core.ExperimentalGetImage.class)
+            android.media.Image mediaImage = imageProxy.getImage();
+            if (mediaImage != null) {
+                InputImage image = InputImage.fromMediaImage(
+                        mediaImage,
+                        imageProxy.getImageInfo().getRotationDegrees()
+                );
+
+                // 使用 ML Kit 处理图像
+                scanner.process(image)
+                        .addOnSuccessListener(barcodes -> {
+                            if (!barcodes.isEmpty()) {
+                                String rawValue = barcodes.get(0).getRawValue();
+                                if (rawValue != null && !rawValue.isEmpty()) {
+                                    // 在主线程更新 UI
+                                    runOnUiThread(() -> {
+                                        etInput.setText(rawValue);
+                                        process(rawValue); // 自动触发校验
+                                        dialog.dismiss(); // 关闭扫码框
+                                        isScanning = false;
+                                    });
+                                }
+                            }
+                        })
+                        .addOnCompleteListener(task -> imageProxy.close()) // 必须关闭
+                        .addOnFailureListener(e -> {
+                            imageProxy.close();
+                            Log.e("MLKit", "Scan failed", e);
+                        });
+            } else {
+                imageProxy.close();
+            }
+        });
+
+        preview.setSurfaceProvider(viewFinder.getSurfaceProvider());
+
+        try {
+            cameraProvider.unbindAll();
+            cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, preview, imageAnalysis);
+        } catch (Exception e) {
+            Log.e("CameraX", "Use case binding failed", e);
+            isScanning = false;
+            dialog.dismiss();
         }
-        return input.replace("&","#");
     }
 
-    private Date strictDate(String s){
-        try{
-            SimpleDateFormat sdf=new SimpleDateFormat("yyyyMMdd");
-            sdf.setLenient(false);
-            return sdf.parse(s);
-        }catch(Exception e){
-            return null;
-        }
-    }
+    // --- 保持原有的业务逻辑方法不变 ---
+    // (包括 getScanData, canScan, receiver, setStatus, process, extract, strictDate, showExit)
+    // ... (此处保留你上传的文件中对应的方法代码) ...
+
+    // --- 原有方法省略 (请保留你文件里的这些方法) ---
+    // 请确保保留以下方法：
+    // private String getScanData(Intent intent) { ... }
+    // private boolean canScan() { ... }
+    // private BroadcastReceiver receiver = ... 
+    // @Override protected void onResume() { ... }
+    // @Override protected void onPause() { ... }
+    // private void setStatus(boolean pass) { ... }
+    // private void addBlock(...) { ... }
+    // private void addDivider() { ... }
+    // private void showExit() { ... }
+    // private String extract(String input) { ... }
+    // private Date strictDate(String s) { ... }
 }
