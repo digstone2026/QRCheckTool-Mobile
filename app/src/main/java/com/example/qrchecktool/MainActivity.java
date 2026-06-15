@@ -139,8 +139,20 @@ public class MainActivity extends Activity {
         topBar.addView(topBox,new LinearLayout.LayoutParams(0,-2,1));
         topBar.addView(btnClose);
 
+                // --- 修改点：初始化输入框 ---
         etInput = new EditText(this);
-        etInput.setHint("Scan or Input");
+        etInput.setHint("点击此处扫码或输入");
+        
+        // 关键修改：设置为不可聚焦（防止弹出软键盘），但可点击
+        etInput.setFocusable(false); 
+        etInput.setClickable(true);
+
+        // 设置点击监听器，用于唤起扫码
+        etInput.setOnClickListener(v -> {
+            if (!isScanning) {
+                checkCameraPermission();
+            }
+        });
 
         etInput.setOnKeyListener((v, keyCode, event) -> {
             if(keyCode == KeyEvent.KEYCODE_ENTER &&
