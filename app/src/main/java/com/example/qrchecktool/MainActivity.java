@@ -270,12 +270,12 @@ root.addView(imgExample);
             passCount++;
             tvStatus.setText("PASS");
             parent.setBackgroundColor(Color.GREEN);
-            t.startTone(ToneGenerator.TONE_PROP_BEEP);
+            /*t.startTone(ToneGenerator.TONE_PROP_BEEP);*/
         }else{
             failCount++;
             tvStatus.setText("FAIL");
             parent.setBackgroundColor(Color.RED);
-            t.startTone(ToneGenerator.TONE_SUP_ERROR);
+            /*t.startTone(ToneGenerator.TONE_SUP_ERROR);*/
         }
 
         tvInfo.setText("v1.0 | P:"+passCount+" F:"+failCount);
