@@ -10,8 +10,7 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.widget.*;
 
-import com.journeyapps.barcodescanner.IntentIntegrator;
-import com.journeyapps.barcodescanner.IntentResult;
+import com.journeyapps.barcodescanner.CaptureActivity;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -89,12 +88,8 @@ public class MainActivity extends Activity {
         btnScan.setText("📷 扫码");
 
         btnScan.setOnClickListener(v -> {
-            IntentIntegrator integrator = new IntentIntegrator(this);
-            integrator.setDesiredBarcodeFormats(IntentIntegrator.QR_CODE);
-            integrator.setPrompt("对准二维码");
-            integrator.setBeepEnabled(false);  // ✅ 不发声音
-            integrator.setOrientationLocked(true);
-            integrator.initiateScan();
+             Intent intent = new Intent(this, CaptureActivity.class);
+             startActivityForResult(intent, 1);
         });
 
         // ✅ 识别结果
