@@ -1,7 +1,18 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()   // ✅ 必须
+    }
+}
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
-        mavenCentral()   // ✅ 核心：必须有
+        mavenCentral()        // ✅ 必须
     }
 }
+
+rootProject.name = "QRCheckTool-Mobile"
+include(":app")
