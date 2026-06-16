@@ -114,8 +114,11 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
-        IntentResult result = IntentIntegrator.parseActivityResult(
-                requestCode, resultCode, data);
+    
+@Override
+protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    super.onActivityResult(requestCode, resultCode, data);
+
 
         if (result != null && result.getContents() != null) {
 
