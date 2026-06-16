@@ -2,7 +2,7 @@ pluginManagement {
     repositories {
         google()
         mavenCentral()
-        gradlePluginPortal()   // ✅ 必须
+        gradlePluginPortal()   // ✅ 关键，不加一定报错
     }
 }
 
@@ -10,7 +10,7 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
-        mavenCentral()        // ✅ 必须
+        mavenCentral()
     }
 }
 
