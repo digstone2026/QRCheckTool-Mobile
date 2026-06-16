@@ -1,5 +1,6 @@
 package com.example.qrchecktool;
-
+import com.journeyapps.barcodescanner.IntentIntegrator;
+import com.journeyapps.barcodescanner.IntentResult;
 // ... (原有的 import 保持不变) ...
 import android.Manifest;
 import android.app.Activity;
@@ -68,6 +69,15 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // ✅ 摄像头权限（鸿蒙/安卓都需要）
+if (checkSelfPermission(android.Manifest.permission.CAMERA)
+        != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+
+    requestPermissions(
+            new String[]{android.Manifest.permission.CAMERA},
+            100
+    );
+}
         ScrollView scroll = new ScrollView(this);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
