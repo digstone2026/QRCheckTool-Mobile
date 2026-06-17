@@ -103,6 +103,16 @@ public class MainActivity extends Activity {
         root.addView(topBar);
         root.addView(etInput);
         root.addView(btnScan);
+        // ✅ 示例图片
+ImageView imgExample = new ImageView(this);
+imgExample.setImageResource(R.drawable.example); // ✅ 你的图片名字
+
+imgExample.setAdjustViewBounds(true);
+imgExample.setScaleType(ImageView.ScaleType.FIT_CENTER);
+imgExample.setPadding(10,10,10,10);
+
+// ✅ 加在扫码按钮下面
+root.addView(imgExample);
         root.addView(tvExtracted);
         root.addView(container);
 
