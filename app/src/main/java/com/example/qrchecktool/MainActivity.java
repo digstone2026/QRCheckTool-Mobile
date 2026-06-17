@@ -50,7 +50,7 @@ public class MainActivity extends Activity {
         tvStatus.setTextColor(Color.WHITE);
 
         tvInfo = new TextView(this);
-        tvInfo.setText("v1.1 | P:0 F:0");
+        tvInfo.setText("v1.1-jazhao-20260616");
         tvInfo.setGravity(Gravity.CENTER);
         tvInfo.setTextColor(Color.WHITE);
 
