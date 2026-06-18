@@ -87,6 +87,7 @@ public class MainActivity extends Activity {
         // ✅ 扫码按钮
         Button btnScan = new Button(this);
         btnScan.setText("📷 扫码");
+        btnScan.setTextSize(22);   // ✅ 推荐 18~24
 
         btnScan.setOnClickListener(v -> {
             Intent intent = new Intent(this, CaptureActivity.class);
