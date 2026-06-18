@@ -64,8 +64,8 @@ public class MainActivity extends Activity {
         TextView btnClose = new TextView(this);
         btnClose.setText("X");
         btnClose.setPadding(20, 20, 20, 20);
-        btnClose.setOnClickListener(v -> finish());
-
+        btnClose.setOnClickListener(v -> showExitDialog());
+        
         LinearLayout topBar = new LinearLayout(this);
         topBar.addView(topBox, new LinearLayout.LayoutParams(0, -2, 1));
         topBar.addView(btnClose);
@@ -286,5 +286,13 @@ root.addView(imgExample);
         } catch (Exception e) {
             return null;
         }
+    }
+    private void showExitDialog(){
+    new AlertDialog.Builder(this)
+            .setTitle("退出确认")
+            .setMessage("确定要退出吗？")
+            .setPositiveButton("是", (dialog, which) -> finish())
+            .setNegativeButton("否", null)
+            .show();
     }
 }
