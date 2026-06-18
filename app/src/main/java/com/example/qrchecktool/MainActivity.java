@@ -150,8 +150,8 @@ root.addView(imgExample);
 
         String extracted = extract(input);
 
-        tvExtracted.setText("识别的效期内容:\n " + extracted);
-
+        tvExtracted.setText("识别的效期内容: " + extracted);
+        tvExtracted.setTextSize(12);   // ✅ 只影响这一行
         String[] parts = extracted.split("#");
 
         if (parts.length != 3) {
