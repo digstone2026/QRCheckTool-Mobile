@@ -90,6 +90,9 @@ public class MainActivity extends Activity {
 
         btnScan.setOnClickListener(v -> {
             Intent intent = new Intent(this, CaptureActivity.class);
+            // ✅ 关闭扫码声音
+            intent.putExtra("BEEP_ENABLED", false);
+
             startActivityForResult(intent, 1);
         });
 
@@ -147,7 +150,7 @@ root.addView(imgExample);
 
         String extracted = extract(input);
 
-        tvExtracted.setText("识别的效期内容: " + extracted);
+        tvExtracted.setText("识别的效期内容:\n " + extracted);
 
         String[] parts = extracted.split("#");
 
