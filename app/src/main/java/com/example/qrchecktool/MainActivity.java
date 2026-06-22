@@ -91,6 +91,13 @@ public class MainActivity extends Activity {
 
         btnScan.setOnClickListener(v -> {
             Intent intent = new Intent(this, CaptureActivity.class);
+            
+// ✅ 强制连续对焦
+intent.putExtra("AUTO_FOCUS", true);
+
+// ✅ 提升扫描区域识别
+intent.putExtra("SCAN_MODE", "QR_CODE_MODE");
+
             // ✅ 关闭扫码声音
             intent.putExtra("BEEP_ENABLED", false);
 
