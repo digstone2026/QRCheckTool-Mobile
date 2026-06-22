@@ -93,7 +93,7 @@ public class MainActivity extends Activity {
             Intent intent = new Intent(this, CaptureActivity.class);
             
             // ✅ 强制连续对焦
-            intent.p=utExtra("AUTO_FOCUS", true);
+            intent.putExtra("AUTO_FOCUS", true);
 
             // ✅ 提升扫描区域识别
             intent.putExtra("SCAN_MODE", "QR_CODE_MODE");
